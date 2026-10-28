@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0;font-size:14px}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+<title>LocaLink Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one phone-sized app column (customer / worker / admin) centred on a quiet field; role switch on top, tab bar at the bottom. */
+:root{
+  --bg:#E9F0F0; --surface:#FFFFFF; --ink:#12272B; --muted:#546C71; --line:#D3E0E1;
+  --brand:#0F5C63; --brand-ink:#FFFFFF; --chip:#E3EEEF; --accent:#E8912D;
+  --ok:#1B7A4B; --warn:#9A6212; --bad:#B0372E;
+  --ok-bg:#DDF1E6; --warn-bg:#FBEBCF; --bad-bg:#F9DEDB;
+  --font-display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
+  --font-body:'Figtree','Segoe UI',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0A1517; --surface:#12262A; --ink:#E4F0F1; --muted:#9DB5B8; --line:#25434A;
+  --brand:#46B4BD; --brand-ink:#06181A; --chip:#1A363B; --accent:#F0A64F;
+  --ok:#52C98F; --warn:#E6B255; --bad:#F2857B;
+  --ok-bg:#15382A; --warn-bg:#3B2E14; --bad-bg:#40211E; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0A1517; --surface:#12262A; --ink:#E4F0F1; --muted:#9DB5B8; --line:#25434A;
+  --brand:#46B4BD; --brand-ink:#06181A; --chip:#1A363B; --accent:#F0A64F;
+  --ok:#52C98F; --warn:#E6B255; --bad:#F2857B;
+  --ok-bg:#15382A; --warn-bg:#3B2E14; --bad-bg:#40211E; color-scheme:dark;}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px}
+h1,h2,h3{font-family:var(--font-display);margin:0;line-height:1.15;text-wrap:balance}
+h1{font-size:22px} h2{font-size:17px} h3{font-size:15px}
+p{margin:0}
+button,select,input,textarea{font:inherit;color:inherit}
+.muted{color:var(--muted)} .small{font-size:13px}
+.wrap{max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-weight:700;font-size:22px;color:var(--brand)}
+.tag{font-size:12px;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--chip);color:var(--muted)}
+.roles{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;background:var(--chip);border-radius:12px}
+.roles button{border:0;background:transparent;padding:9px 6px;border-radius:9px;font-weight:600;color:var(--muted);cursor:pointer}
+.roles button[aria-selected="true"]{background:var(--surface);color:var(--brand);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+.phone{background:var(--surface);border:1px solid var(--line);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;min-height:560px}
+.screen{padding:18px 16px 24px;display:flex;flex-direction:column;gap:14px;flex:1}
+.tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border-top:1px solid var(--line);background:var(--surface);position:sticky;bottom:0}
+.tabs button{border:0;background:transparent;padding:13px 4px;font-weight:600;font-size:13px;color:var(--muted);cursor:pointer;border-top:3px solid transparent}
+.tabs button[aria-selected="true"]{color:var(--brand);border-top-color:var(--brand)}
+.count{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:99px;background:var(--accent);color:#2A1700;font-size:11px;line-height:18px;text-align:center}
+label{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:600;color:var(--muted)}
+select,input[type=text],input[type=password],textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font-weight:500}
+textarea{min-height:64px;resize:vertical}
+.lbl{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);padding:7px 11px;border-radius:99px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.slots .chip{border-radius:10px;text-align:center;padding:8px 4px;font-size:12px;line-height:1.25}
+.slots .chip small{display:block;font-weight:500;opacity:.8}
+.btn{border:0;border-radius:11px;padding:12px 14px;font-weight:700;cursor:pointer;background:var(--brand);color:var(--brand-ink)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn.bad{background:var(--bad-bg);color:var(--bad)}
+.btn.ok{background:var(--ok-bg);color:var(--ok)}
+.btn.sm{padding:8px 11px;font-size:13px;border-radius:9px}
+.btn:focus-visible,.chip:focus-visible,.tabs button:focus-visible,.roles button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row.between{justify-content:space-between}
+.grow{flex:1;min-width:0}
+.card{border:1px solid var(--line);border-radius:14px;padding:13px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.avatar{width:42px;height:42px;border-radius:50%;background:var(--chip);color:var(--brand);display:grid;place-items:center;font-family:var(--font-display);font-weight:700;flex:none}
+.score{text-align:center;flex:none}
+.score b{display:block;font-family:var(--font-display);font-size:26px;line-height:1;color:var(--brand)}
+.score span{font-size:11px;color:var(--muted);font-weight:600}
+.pill{display:inline-block;padding:3px 9px;border-radius:99px;font-size:12px;font-weight:700;background:var(--chip);color:var(--muted)}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.warn{background:var(--warn-bg);color:var(--warn)} .pill.bad{background:var(--bad-bg);color:var(--bad)}
+.meta{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:13px;color:var(--muted)}
+details{border-top:1px dashed var(--line);padding-top:8px}
+summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--brand)}
+.bars{display:flex;flex-direction:column;gap:7px;margin-top:8px}
+.bar{display:grid;grid-template-columns:92px 1fr 44px;gap:8px;align-items:center;font-size:12px;color:var(--muted)}
+.bar i{display:block;height:7px;border-radius:99px;background:var(--chip);overflow:hidden}
+.bar i u{display:block;height:100%;background:var(--accent);border-radius:99px}
+.bar b{text-align:right;color:var(--ink);font-variant-numeric:tabular-nums}
+.weights{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--chip)}
+.weights details{border:0;padding:0}
+.wrow{display:grid;grid-template-columns:96px 1fr 38px;gap:8px;align-items:center;font-size:12px;margin-top:8px}
+.wrow input{width:100%;accent-color:var(--brand)}
+.wrow b{text-align:right;font-variant-numeric:tabular-nums}
+.formula{font-size:12px;color:var(--muted);margin-top:8px}
+.track{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted)}
+.track span{display:flex;align-items:center;gap:5px}
+.track span::before{content:"";width:10px;height:10px;border-radius:50%;border:2px solid var(--line);background:var(--surface)}
+.track span.on{color:var(--ink)} .track span.on::before{background:var(--brand);border-color:var(--brand)}
+.track hr{flex:1;border:0;border-top:2px solid var(--line);margin:0;min-width:10px}
+.stars{display:flex;gap:4px}
+.stars .chip{padding:6px 10px}
+.empty{padding:26px 12px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:14px}
+.back{border:0;background:none;color:var(--brand);font-weight:700;cursor:pointer;padding:0;align-self:flex-start}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stats div{background:var(--chip);border-radius:12px;padding:10px;text-align:center}
+.stats b{display:block;font-family:var(--font-display);font-size:19px}
+.stats span{font-size:11px;color:var(--muted);font-weight:600}
+.note{font-size:12px;color:var(--muted);text-align:center}
+.foot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.foot button{border:0;background:none;color:var(--brand);font-weight:700;cursor:pointer;font-size:12px;padding:0}
+.stack{display:flex;flex-direction:column;gap:14px}
+.err{margin:0;padding:8px 10px;border-radius:10px;background:var(--bad-bg);color:var(--bad);font-size:13px;font-weight:600}
+.linkbtn{border:0;background:none;color:var(--brand);font-weight:700;cursor:pointer;font-size:13px;padding:0}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;min-height:84px;word-break:break-all}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;max-width:90vw;z-index:20;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+@media (prefers-reduced-motion:no-preference){.card,.screen>*{animation:rise .18s ease-out}@keyframes rise{from{opacity:.4;transform:translateY(4px)}}}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div class="brand">
+      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="10" cy="14" r="7" fill="none" stroke="var(--brand)" stroke-width="3"/><circle cx="18" cy="14" r="7" fill="none" stroke="var(--accent)" stroke-width="3"/></svg>
+      LocaLink
+    </div>
+    <div class="row" id="who"><span class="tag">Prototype · sample data</span></div>
+  </div>
+  <div class="roles" role="tablist" aria-label="Choose a role to try" id="roles"></div>
+  <div class="phone">
+    <div class="screen" id="screen"></div>
+    <div class="tabs" id="tabs" role="tablist"></div>
+  </div>
+  <div class="foot"><span>Matching is rule-based. Sample workers and bookings are examples. Your account and activity stay in this browser.</span><button type="button" data-act="reset">Reset demo</button></div>
+</div>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+const SERVICES = {
+  'Electrician':['Wiring','Fan & appliance repair','Inverter & UPS','Switchboard'],
+  'Plumber':['Leak repair','Pipe fitting','Bathroom fittings','Water tank'],
+  'Carpenter':['Furniture repair','Door & window','Modular fitting'],
+  'Painter':['Interior','Exterior','Waterproofing'],
+  'Cleaner':['Home deep clean','Kitchen','Bathroom'],
+  'Gardener':['Lawn care','Plant care','Terrace garden'],
+  'Driver':['Local trips','Airport','Outstation'],
+  'Domestic help':['Cooking','Daily cleaning','Utensils & laundry'],
+  'Caregiver':['Elder care','Patient care','Child care']
+};
+const AREAS = {'Lakeview Colony':[1,6],'Market Road':[4,5],'Temple Street':[3,2],'Green Park':[7,6],'Station Road':[6,1],'Riverside':[9,3]};
+const SLOTS = [
+  {id:'td-m',day:'Today',t:'9 AM – 12 PM'},{id:'td-a',day:'Today',t:'12 – 4 PM'},{id:'td-e',day:'Today',t:'4 – 8 PM'},
+  {id:'tm-m',day:'Tomorrow',t:'9 AM – 12 PM'},{id:'tm-a',day:'Tomorrow',t:'12 – 4 PM'},{id:'tm-e',day:'Tomorrow',t:'4 – 8 PM'}];
+const slotText = id => { const s = SLOTS.find(x => x.id === id); return s ? s.day + ', ' + s.t : id; };
+const WLABEL = {skill:'Skill match',loc:'Location',avail:'Availability',exp:'Experience',rel:'Reliability',rate:'Rating'};
+const ROLE_TABS = {
+  customer:[['find','Find'],['bookings','My bookings']],
+  worker:[['requests','Requests'],['schedule','Availability'],['join','Join']],
+  admin:[['approvals','Approvals'],['monitor','Bookings'],['complaints','Complaints']]
+};
+
+function seed(){
+  return {
+    workers:[
+      {id:1,name:'Ravi Kumar',service:'Electrician',skills:['Wiring','Fan & appliance repair'],area:'Market Road',radius:4,exp:8,rating:4.7,count:31,completed:46,accepted:48,coop:true,status:'approved',slots:['td-a','td-e','tm-m','tm-a']},
+      {id:2,name:'Imran Sheikh',service:'Electrician',skills:['Wiring','Inverter & UPS','Switchboard'],area:'Lakeview Colony',radius:5,exp:12,rating:4.5,count:52,completed:88,accepted:94,coop:false,status:'approved',slots:['td-m','td-a','tm-m']},
+      {id:3,name:'Prakash N',service:'Electrician',skills:['Fan & appliance repair'],area:'Green Park',radius:3,exp:2,rating:4.8,count:3,completed:5,accepted:5,coop:false,status:'approved',slots:['td-e','tm-a','tm-e']},
+      {id:4,name:'Karthik S',service:'Electrician',skills:['Wiring','Fan & appliance repair','Switchboard'],area:'Station Road',radius:4,exp:5,rating:4.2,count:19,completed:25,accepted:31,coop:true,status:'approved',slots:['tm-m','tm-a','tm-e','td-e']},
+      {id:5,name:'Anil Das',service:'Plumber',skills:['Leak repair','Pipe fitting'],area:'Temple Street',radius:4,exp:10,rating:4.6,count:40,completed:61,accepted:64,coop:true,status:'approved',slots:['td-a','td-e','tm-m']},
+      {id:6,name:'Joseph M',service:'Plumber',skills:['Bathroom fittings','Water tank','Leak repair'],area:'Riverside',radius:5,exp:6,rating:4.4,count:22,completed:30,accepted:35,coop:false,status:'approved',slots:['td-m','tm-a']},
+      {id:7,name:'Suresh Rao',service:'Carpenter',skills:['Furniture repair','Door & window'],area:'Market Road',radius:5,exp:14,rating:4.8,count:63,completed:97,accepted:99,coop:true,status:'approved',slots:['td-a','tm-m','tm-a']},
+      {id:8,name:'Mohan Lal',service:'Painter',skills:['Interior','Waterproofing'],area:'Green Park',radius:6,exp:9,rating:4.3,count:27,completed:38,accepted:44,coop:false,status:'approved',slots:['tm-m','tm-a']},
+      {id:9,name:'Lakshmi Devi',service:'Cleaner',skills:['Home deep clean','Kitchen','Bathroom'],area:'Lakeview Colony',radius:4,exp:7,rating:4.9,count:45,completed:70,accepted:71,coop:true,status:'approved',slots:['td-m','td-a','tm-m']},
+      {id:10,name:'Meena K',service:'Domestic help',skills:['Cooking','Daily cleaning'],area:'Temple Street',radius:3,exp:6,rating:4.6,count:34,completed:52,accepted:54,coop:true,status:'approved',slots:['td-m','tm-m']},
+      {id:11,name:'Sunita P',service:'Caregiver',skills:['Elder care','Patient care'],area:'Market Road',radius:5,exp:11,rating:4.9,count:29,completed:41,accepted:42,coop:true,status:'approved',slots:['td-a','td-e','tm-a']},
+      {id:12,name:'Abdul R',service:'Driver',skills:['Local trips','Airport'],area:'Station Road',radius:8,exp:9,rating:4.5,count:58,completed:90,accepted:96,coop:false,status:'approved',slots:['td-e','tm-m','tm-e']},
+      {id:13,name:'Gopal T',service:'Gardener',skills:['Lawn care','Plant care','Terrace garden'],area:'Riverside',radius:6,exp:4,rating:4.1,count:12,completed:18,accepted:22,coop:false,status:'approved',slots:['tm-m','tm-a']},
+      {id:14,name:'Vikram T',service:'Electrician',skills:['Wiring'],area:'Riverside',radius:4,exp:3,rating:0,count:0,completed:0,accepted:0,coop:false,status:'pending',slots:['td-a','tm-a'],docs:['ID proof uploaded','ITI Electrician certificate uploaded']},
+      {id:15,name:'Farida B',service:'Cleaner',skills:['Home deep clean','Kitchen'],area:'Green Park',radius:4,exp:5,rating:0,count:0,completed:0,accepted:0,coop:true,status:'pending',slots:['td-m','tm-m'],docs:['ID proof uploaded','Cooperative membership letter uploaded']}
+    ],
+    bookings:[
+      {id:1,mine:true,workerId:2,service:'Electrician',skills:['Wiring'],area:'Lakeview Colony',slot:'td-m',address:'House 12, 3rd Cross',note:'Two sockets sparking',status:'completed',rating:null,complaint:null},
+      {id:2,mine:false,who:'Neha',workerId:1,service:'Electrician',skills:['Fan & appliance repair'],area:'Green Park',slot:'td-e',address:'Flat 4B, Palm Court',note:'Ceiling fan is noisy',status:'requested',rating:null,complaint:null},
+      {id:3,mine:false,who:'Arjun',workerId:1,service:'Electrician',skills:['Wiring'],area:'Market Road',slot:'tm-m',address:'27, Bazaar Lane',note:'New light point in the hall',status:'accepted',rating:null,complaint:null},
+      {id:4,mine:false,who:'Divya',workerId:4,service:'Electrician',skills:['Switchboard'],area:'Station Road',slot:'td-a',address:'Shop 6, Station Road',note:'',status:'completed',rating:2,complaint:{text:'Arrived 40 minutes late and did not call.',status:'open'}}
+    ],
+    nextW:16,nextB:5
+  };
+}
+
+let D = seed();
+const freshUI = () => ({
+  role:'customer',tab:'find',cScreen:'form',
+  find:{service:'Electrician',skills:[],area:'Market Road',slot:'td-e',details:'',note:''},
+  pick:null,workerId:1,
+  weights:{skill:25,loc:20,avail:15,exp:10,rel:15,rate:15},
+  form:null,rate:0,reg:{name:'',service:'Electrician',skills:[],area:'Market Road',radius:4,exp:2,coop:false,id:true,cert:false,slots:['td-a','tm-a']},
+  open:new Set()
+});
+let ui = freshUI();
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const initials = n => n.split(' ').map(p => p[0]).slice(0,2).join('').toUpperCase();
+const wById = id => D.workers.find(w => w.id === id);
+const dist = (a,b) => Math.hypot(AREAS[a][0]-AREAS[b][0], AREAS[a][1]-AREAS[b][1]) * 0.6;
+const reliability = w => w.accepted ? w.completed / w.accepted : 0.8;
+const stars = n => '★'.repeat(Math.round(n)) + '☆'.repeat(5 - Math.round(n));
+let toastTimer;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 2600); }
+
+/* ---------- matching: filter, then weighted score (components 0-1) ---------- */
+function matches(req){
+  const out = [];
+  for (const w of D.workers){
+    if (w.status !== 'approved' || w.service !== req.service) continue;
+    const d = dist(w.area, req.area);
+    if (d > w.radius) continue;
+    const free = w.slots.includes(req.slot);
+    const day = req.slot.slice(0,2);
+    const alt = w.slots.find(s => s.startsWith(day) && s !== req.slot);
+    if (!free && !alt) continue;
+    const tags = req.skills;
+    const hit = tags.filter(t => w.skills.includes(t)).length;
+    const c = {
+      skill: tags.length ? 0.4 + 0.6 * hit / tags.length : 0.5 + 0.5 * Math.min(w.skills.length / 3, 1),
+      loc: 1 - d / w.radius,
+      avail: free ? 1 : 0.5,
+      exp: Math.min(w.exp / 10, 1),
+      rel: reliability(w),
+      rate: w.count >= 5 ? w.rating / 5 : null
+    };
+    let num = 0, den = 0;
+    for (const k in c){ if (c[k] === null) continue; num += ui.weights[k] * c[k]; den += ui.weights[k]; }
+    const score = den ? num / den * 100 : 0;
+    out.push({w, c, d, free, alt, score, den});
+  }
+  return out.sort((a,b) => b.score - a.score);
+}
+
+/* ---------- views ---------- */
+function renderRoles(){
+  $('#roles').innerHTML = [['customer','Customer'],['worker','Worker'],['admin','Admin']].map(([r,l]) =>
+    `<button type="button" role="tab" aria-selected="${ui.role===r}" data-act="role" data-v="${r}">${l}</button>`).join('');
+}
+function renderTabs(){
+  const pend = D.workers.filter(w => w.status === 'pending').length;
+  const openC = D.bookings.filter(b => b.complaint && b.complaint.status === 'open').length;
+  const reqs = D.bookings.filter(b => b.workerId === ui.workerId && b.status === 'requested').length;
+  const badge = k => (ui.role==='admin' && k==='approvals' && pend) ? pend : (ui.role==='admin' && k==='complaints' && openC) ? openC : (ui.role==='worker' && k==='requests' && reqs) ? reqs : 0;
+  $('#tabs').innerHTML = ROLE_TABS[ui.role].map(([k,l]) =>
+    `<button type="button" role="tab" aria-selected="${ui.tab===k}" data-act="tab" data-v="${k}">${l}${badge(k)?`<span class="count">${badge(k)}</span>`:''}</button>`).join('');
+}
+
+function chips(list, sel, act){
+  return `<div class="chips">${list.map(s => `<button type="button" class="chip" aria-pressed="${sel.includes(s)}" data-act="${act}" data-v="${esc(s)}">${esc(s)}</button>`).join('')}</div>`;
+}
+function slotChips(sel, act, multi){
+  return `<div class="slots">${SLOTS.map(s => `<button type="button" class="chip" aria-pressed="${multi ? sel.includes(s.id) : sel===s.id}" data-act="${act}" data-v="${s.id}">${s.day}<small>${s.t}</small></button>`).join('')}</div>`;
+}
+function opts(list, cur){ return list.map(o => `<option${o===cur?' selected':''}>${esc(o)}</option>`).join(''); }
+
+function viewCustomerFind(){
+  const f = ui.find;
+  if (ui.cScreen === 'results') return viewResults();
+  if (ui.cScreen === 'confirm') return viewConfirm();
+  return `
+  <div><h1>Find a worker nearby</h1><p class="muted small" style="margin-top:4px">Approved workers who serve your area and are free at your time.</p></div>
+  <label>Service<select id="f-service" data-bind="find.service">${opts(Object.keys(SERVICES), f.service)}</select></label>
+  <div><div class="lbl">What do you need? (optional)</div>${chips(SERVICES[f.service], f.skills, 'skill')}</div>
+  <label>Your area<select id="f-area" data-bind="find.area">${opts(Object.keys(AREAS), f.area)}</select></label>
+  <div><div class="lbl">When</div>${slotChips(f.slot, 'slot', false)}</div>
+  <label>Address details <span style="font-weight:500">(shared only after a worker accepts)</span><input type="text" id="f-details" data-bind="find.details" value="${esc(f.details)}" placeholder="House or flat number, landmark"></label>
+  <label>Note for the worker<textarea id="f-note" data-bind="find.note" placeholder="Describe the problem">${esc(f.note)}</textarea></label>
+  <button type="button" class="btn" data-act="search">Find workers</button>`;
+}
+
+function weightsPanel(){
+  const total = Object.values(ui.weights).reduce((a,b) => a+b, 0) || 1;
+  return `<div class="weights"><details data-key="w"${ui.open.has('w')?' open':''}><summary>How ranking works · tune the weights</summary>
+    ${Object.keys(WLABEL).map(k => `<div class="wrow"><span>${WLABEL[k]}</span><input type="range" min="0" max="40" value="${ui.weights[k]}" data-w="${k}" aria-label="${WLABEL[k]} weight"><b id="wv-${k}">${Math.round(ui.weights[k]/total*100)}%</b></div>`).join('')}
+    <p class="formula">Score = weighted sum of six components, each scaled 0 to 1. Rating counts only when a worker has 5 or more reviews. Weights will be tuned on pilot data.</p></details></div>`;
+}
+
+function resultCards(list){
+  if (!list.length) return `<div class="empty">No approved worker serves ${esc(ui.find.area)} at this time. Try another time slot or area.</div>`;
+  return list.map((m, i) => {
+    const w = m.w, key = 'r' + w.id;
+    const comps = Object.keys(WLABEL).map(k => {
+      if (m.c[k] === null) return `<div class="bar"><span>${WLABEL[k]}</span><i></i><b>n/a</b></div>`;
+      return `<div class="bar"><span>${WLABEL[k]}</span><i><u style="width:${Math.round(m.c[k]*100)}%"></u></i><b>${Math.round(m.c[k]*100)}</b></div>`;
+    }).join('');
+    return `<div class="card">
+      <div class="row" style="flex-wrap:nowrap;align-items:flex-start">
+        <div class="avatar">${initials(w.name)}</div>
+        <div class="grow"><h3>${esc(w.name)}${i===0?' <span class="pill ok">Best match</span>':''}</h3>
+          <div class="meta"><span>${esc(w.skills.join(', '))}</span></div></div>
+        <div class="score"><b>${Math.round(m.score)}</b><span>match</span></div>
+      </div>
+      <div class="meta"><span>${m.d.toFixed(1)} km away</span><span>${w.exp} yrs</span>
+        <span>${w.count >= 5 ? stars(w.rating) + ' ' + w.rating.toFixed(1) + ' (' + w.count + ')' : 'New, fewer than 5 reviews'}</span>
+        <span>${w.coop ? 'Cooperative member' : 'Independent'}</span></div>
+      <div>${m.free ? '<span class="pill ok">Free ' + esc(slotText(ui.find.slot)) + '</span>' : '<span class="pill warn">Free ' + esc(slotText(m.alt)) + ' instead</span>'}</div>
+      <details data-key="${key}"${ui.open.has(key)?' open':''}><summary>Why this rank</summary><div class="bars">${comps}</div></details>
+      <button type="button" class="btn" data-act="pick" data-v="${w.id}">Request booking</button>
+    </div>`;
+  }).join('');
+}
+
+function viewResults(){
+  const f = ui.find, list = matches(f);
+  return `<button type="button" class="back" data-act="back">← Change search</button>
+  <div><h1>${list.length} worker${list.length===1?'':'s'} for you</h1>
+  <p class="muted small" style="margin-top:4px">${esc(f.service)} · ${esc(f.area)} · ${esc(slotText(f.slot))}${f.skills.length?' · '+esc(f.skills.join(', ')):''}</p></div>
+  ${weightsPanel()}
+  <div id="resultsList" style="display:flex;flex-direction:column;gap:12px">${resultCards(list)}</div>`;
+}
+
+function viewConfirm(){
+  const w = wById(ui.pick), f = ui.find;
+  return `<button type="button" class="back" data-act="back">← Back to results</button>
+  <h1>Confirm your request</h1>
+  <div class="card"><div class="row" style="flex-wrap:nowrap"><div class="avatar">${initials(w.name)}</div>
+    <div class="grow"><h3>${esc(w.name)}</h3><div class="meta"><span>${esc(w.service)}</span><span>${esc(f.area)}</span><span>${esc(slotText(f.slot))}</span></div></div></div></div>
+  <label>Address details<input type="text" id="c-details" data-bind="find.details" value="${esc(f.details)}" placeholder="House or flat number, landmark"></label>
+  <label>Note for the worker<textarea id="c-note" data-bind="find.note">${esc(f.note)}</textarea></label>
+  <p class="small muted">${esc(w.name.split(' ')[0])} sees only your area until they accept. Your address is released after acceptance.</p>
+  <button type="button" class="btn" data-act="send">Send booking request</button>`;
+}
+
+function track(b){
+  if (b.status === 'declined') return '<span class="pill bad">Declined by worker</span>';
+  if (b.status === 'cancelled') return '<span class="pill">Cancelled</span>';
+  const steps = ['requested','accepted','completed'], at = steps.indexOf(b.status);
+  return `<div class="track">${steps.map((s,i) => `<span class="${i<=at?'on':''}">${s[0].toUpperCase()+s.slice(1)}</span>${i<2?'<hr>':''}`).join('')}</div>`;
+}
+
+function viewBookings(){
+  const list = D.bookings.filter(b => b.mine).sort((a,b) => b.id - a.id);
+  if (!list.length) return `<h1>My bookings</h1><div class="empty">No bookings yet. Find a worker to send your first request.</div>`;
+  return `<h1>My bookings</h1>` + list.map(b => {
+    const w = wById(b.workerId);
+    let actions = '';
+    if (b.status === 'requested' || b.status === 'accepted') actions = `<button type="button" class="btn ghost sm" data-act="cancel" data-v="${b.id}">Cancel booking</button>`;
+    if (b.status === 'declined') actions = `<button type="button" class="btn sm" data-act="refind" data-v="${b.id}">Find another worker</button>`;
+    if (b.status === 'completed'){
+      if (b.rating === null && ui.form !== 'rate' + b.id) actions += `<button type="button" class="btn sm" data-act="openform" data-v="rate${b.id}">Rate this service</button>`;
+      if (b.rating !== null) actions += `<span class="pill ok">You rated ${b.rating} / 5</span>`;
+      if (!b.complaint && ui.form !== 'rep' + b.id) actions += `<button type="button" class="btn ghost sm" data-act="openform" data-v="rep${b.id}">Report a problem</button>`;
+      if (b.complaint) actions += `<span class="pill ${b.complaint.status==='open'?'warn':'ok'}">Complaint ${b.complaint.status}</span>`;
+    }
+    let form = '';
+    if (ui.form === 'rate' + b.id) form = `<div class="stars">${[1,2,3,4,5].map(n => `<button type="button" class="chip" aria-pressed="${ui.rate===n}" data-act="star" data-v="${n}">${n} ★</button>`).join('')}</div>
+      <button type="button" class="btn sm" data-act="submitrate" data-v="${b.id}">Submit rating</button>`;
+    if (ui.form === 'rep' + b.id) form = `<textarea id="rep-text" placeholder="What went wrong?"></textarea><button type="button" class="btn sm" data-act="submitrep" data-v="${b.id}">Send to admin</button>`;
+    return `<div class="card">
+      <div class="row between"><h3>${esc(w.name)} · ${esc(b.service)}</h3></div>
+      <div class="meta"><span>${esc(slotText(b.slot))}</span><span>${esc(b.area)}</span></div>
+      ${track(b)}
+      ${b.status==='accepted' ? `<p class="small muted">${esc(w.name.split(' ')[0])} accepted. They can now see your address.</p>` : ''}
+      <div class="row">${actions}</div>${form}</div>`;
+  }).join('');
+}
+
+/* worker */
+function workerPicker(){
+  return `<label>Viewing as<select id="w-who" data-bind="workerId">${D.workers.filter(w => w.status==='approved').map(w => `<option value="${w.id}"${w.id===ui.workerId?' selected':''}>${esc(w.name)} · ${esc(w.service)}</option>`).join('')}</select></label>`;
+}
+function viewWorkerRequests(){
+  const w = wById(ui.workerId);
+  const mine = D.bookings.filter(b => b.workerId === w.id);
+  const reqs = mine.filter(b => b.status === 'requested'), acc = mine.filter(b => b.status === 'accepted');
+  const who = b => b.mine ? userName() + ' (you, as customer)' : b.who;
+  return `${workerPicker()}
+  <div class="stats"><div><b>${w.count >= 5 ? w.rating.toFixed(1) : 'New'}</b><span>Rating</span></div><div><b>${w.completed}</b><span>Jobs done</span></div><div><b>${Math.round(reliability(w)*100)}%</b><span>Reliability</span></div></div>
+  <h2>New requests</h2>
+  ${reqs.length ? reqs.map(b => `<div class="card"><div class="row between"><h3>${esc(who(b))}</h3><span class="pill warn">Needs reply</span></div>
+    <div class="meta"><span>${esc(b.skills.join(', ') || b.service)}</span><span>${esc(slotText(b.slot))}</span><span>${esc(b.area)}</span></div>
+    ${b.note ? `<p class="small">“${esc(b.note)}”</p>` : ''}
+    <p class="small muted">Exact address is shared after you accept.</p>
+    <div class="row"><button type="button" class="btn ok sm" data-act="accept" data-v="${b.id}">Accept</button><button type="button" class="btn bad sm" data-act="decline" data-v="${b.id}">Decline</button></div></div>`).join('') : '<div class="empty">No pending requests.</div>'}
+  <h2>Accepted jobs</h2>
+  ${acc.length ? acc.map(b => `<div class="card"><div class="row between"><h3>${esc(who(b))}</h3><span class="pill ok">Accepted</span></div>
+    <div class="meta"><span>${esc(slotText(b.slot))}</span><span>${esc(b.area)}</span></div>
+    <p class="small"><b>Address:</b> ${esc(b.address || 'Not provided')}</p>
+    ${b.note ? `<p class="small">“${esc(b.note)}”</p>` : ''}
+    <button type="button" class="btn sm" data-act="complete" data-v="${b.id}">Mark as completed</button></div>`).join('') : '<div class="empty">No accepted jobs.</div>'}`;
+}
+function viewWorkerSchedule(){
+  const w = wById(ui.workerId);
+  return `${workerPicker()}<h1>Your availability</h1>
+  <p class="muted small">Customers only see you for the slots you switch on. Changes apply to search results straight away.</p>
+  ${slotChips(w.slots, 'toggleslot', true)}
+  <div class="card"><h3>Your public profile</h3>
+   <div class="meta"><span>${esc(w.service)}</span><span>${esc(w.skills.join(', '))}</span><span>Serves ${esc(w.area)} within ${w.radius} km</span><span>${w.exp} yrs</span><span>${w.coop?'Cooperative member':'Independent'}</span></div></div>`;
+}
+function viewWorkerJoin(){
+  const r = ui.reg;
+  return `<div><h1>Join LocaLink</h1><p class="muted small" style="margin-top:4px">Create a skill profile. An admin reviews it before you appear to customers.</p></div>
+  <label>Full name<input type="text" id="r-name" data-bind="reg.name" value="${esc(r.name)}" placeholder="Your name"></label>
+  <label>Service<select id="r-service" data-bind="reg.service">${opts(Object.keys(SERVICES), r.service)}</select></label>
+  <div><div class="lbl">Your skills</div>${chips(SERVICES[r.service], r.skills, 'regskill')}</div>
+  <label>Home area<select id="r-area" data-bind="reg.area">${opts(Object.keys(AREAS), r.area)}</select></label>
+  <div class="row"><label class="grow">Service radius (km)<input type="text" inputmode="numeric" id="r-radius" data-bind="reg.radius" value="${esc(r.radius)}"></label>
+  <label class="grow">Experience (years)<input type="text" inputmode="numeric" id="r-exp" data-bind="reg.exp" value="${esc(r.exp)}"></label></div>
+  <div><div class="lbl">Available</div>${slotChips(r.slots, 'regslot', true)}</div>
+  <div><div class="lbl">Verification</div><div class="chips">
+    <button type="button" class="chip" aria-pressed="${r.id}" data-act="regflag" data-v="id">ID proof</button>
+    <button type="button" class="chip" aria-pressed="${r.cert}" data-act="regflag" data-v="cert">Skill certificate</button>
+    <button type="button" class="chip" aria-pressed="${r.coop}" data-act="regflag" data-v="coop">Cooperative member</button></div></div>
+  <button type="button" class="btn" data-act="register">Submit for review</button>`;
+}
+
+/* admin */
+function viewApprovals(){
+  const p = D.workers.filter(w => w.status === 'pending');
+  return `<div><h1>Profiles to review</h1><p class="muted small" style="margin-top:4px">Check the submitted information, then approve or reject.</p></div>` +
+  (p.length ? p.map(w => `<div class="card"><div class="row" style="flex-wrap:nowrap"><div class="avatar">${initials(w.name)}</div>
+    <div class="grow"><h3>${esc(w.name)}</h3><div class="meta"><span>${esc(w.service)}</span><span>${esc(w.area)}</span><span>${w.exp} yrs</span></div></div></div>
+    <div class="meta"><span>Skills: ${esc(w.skills.join(', ') || 'none listed')}</span></div>
+    <div class="chips">${(w.docs||[]).map(d => `<span class="pill ok">${esc(d)}</span>`).join('') || '<span class="pill warn">No documents</span>'}</div>
+    <div class="row"><button type="button" class="btn ok sm" data-act="approve" data-v="${w.id}">Approve</button><button type="button" class="btn bad sm" data-act="reject" data-v="${w.id}">Reject</button></div></div>`).join('')
+   : '<div class="empty">All caught up. No profiles waiting.</div>') +
+  `<p class="note">${D.workers.filter(w=>w.status==='approved').length} approved workers are live.</p>`;
+}
+function viewMonitor(){
+  const list = [...D.bookings].sort((a,b) => b.id - a.id);
+  const c = s => list.filter(b => b.status === s).length;
+  return `<h1>All bookings</h1>
+  <div class="stats"><div><b>${list.length}</b><span>Total</span></div><div><b>${c('requested')+c('accepted')}</b><span>Open</span></div><div><b>${c('completed')}</b><span>Completed</span></div></div>` +
+  list.map(b => `<div class="card"><div class="row between"><h3>${esc(wById(b.workerId).name)} · ${esc(b.service)}</h3>
+    <span class="pill ${b.status==='completed'?'ok':b.status==='declined'||b.status==='cancelled'?'bad':'warn'}">${esc(b.status)}</span></div>
+    <div class="meta"><span>${b.mine?esc(userName()):esc(b.who)}</span><span>${esc(slotText(b.slot))}</span><span>${esc(b.area)}</span>${b.rating!==null?`<span>${b.rating} / 5</span>`:''}</div></div>`).join('');
+}
+function viewComplaints(){
+  const list = D.bookings.filter(b => b.complaint);
+  return `<h1>Complaints</h1>` + (list.length ? list.map(b => `<div class="card"><div class="row between"><h3>${esc(wById(b.workerId).name)}</h3>
+    <span class="pill ${b.complaint.status==='open'?'warn':'ok'}">${b.complaint.status}</span></div>
+    <p class="small">“${esc(b.complaint.text)}”</p><div class="meta"><span>${esc(b.service)}</span><span>${esc(slotText(b.slot))}</span></div>
+    ${b.complaint.status==='open' ? `<button type="button" class="btn sm" data-act="resolve" data-v="${b.id}">Mark as resolved</button>` : ''}</div>`).join('')
+    : '<div class="empty">No complaints.</div>');
+}
+
+function render(){
+  const inApp = auth.master && !!auth.user && !setupMode;
+  $('#roles').hidden = !inApp; $('#tabs').hidden = !inApp;
+  $('#who').innerHTML = inApp
+    ? `<span class="tag">${esc(userName())}</span><button type="button" class="linkbtn" data-act="logout">Log out</button>`
+    : '<span class="tag">Prototype · sample data</span>';
+  if (setupMode){ $('#screen').innerHTML = viewSetup(); return; }
+  if (!auth.master){ $('#screen').innerHTML = viewMaster(); return; }
+  if (!auth.user){ $('#screen').innerHTML = viewAuth(); return; }
+  renderRoles(); renderTabs();
+  const v = { customer:{find:viewCustomerFind,bookings:viewBookings}, worker:{requests:viewWorkerRequests,schedule:viewWorkerSchedule,join:viewWorkerJoin}, admin:{approvals:viewApprovals,monitor:viewMonitor,complaints:viewComplaints} };
+  $('#screen').innerHTML = v[ui.role][ui.tab]();
+  saveData();
+}
+
+/* ---------- access: main password first, then personal accounts ----------
+   Runs entirely in the browser (no server). Passwords are salted and hashed with PBKDF2,
+   never stored in plain text. This keeps casual visitors out; it is not bank-grade security. */
+const MASTER = {s:'', h:'', n:150000};   // only used when GATE_ENABLED is true   // filled in with the owner's setup code
+const store = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ return false; } },
+  sget(k){ try{ return sessionStorage.getItem(k); }catch(e){ return null; } },
+  sset(k,v){ try{ v === null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k,v); }catch(e){} }
+};
+const canStore = store.set('lk_probe','1');
+const GATE_ENABLED = false;   // true = ask for a main password first (create a code on the #setup screen)
+const auth = {master: !GATE_ENABLED || store.sget('lk_master') === '1', user: store.sget('lk_user'), mode:'login'};
+let setupMode = location.hash === '#setup';
+
+const b64 = u8 => btoa(String.fromCharCode(...u8));
+const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const hasCrypto = () => !!(window.crypto && crypto.subtle);
+async function derive(pw, salt, n){
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({name:'PBKDF2', hash:'SHA-256', salt, iterations:n}, key, 256);
+  return b64(new Uint8Array(bits));
+}
+const NOCRYPTO = 'This browser cannot run the secure check. Please open the link in Chrome or Safari.';
+const keyOf = n => n.trim().toLowerCase();
+const usersLoad = () => { try{ return JSON.parse(store.get('lk_users_v1') || '{}'); }catch(e){ return {}; } };
+const usersSave = u => store.set('lk_users_v1', JSON.stringify(u));
+const userName = () => (usersLoad()[auth.user] || {}).name || 'You';
+const saveData = () => { if (auth.user) store.set('lk_data_' + auth.user, JSON.stringify(D)); };
+function loadData(){
+  try{ const raw = store.get('lk_data_' + auth.user); const d = raw && JSON.parse(raw);
+    if (d && Array.isArray(d.workers) && Array.isArray(d.bookings)) return d; }catch(e){}
+  return seed();
+}
+function startSession(k){ auth.user = k; store.sset('lk_user', k); D = loadData(); ui = freshUI(); }
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+async function doUnlock(pw){
+  if (!MASTER.h) return 'Access has not been opened yet. Please ask the LocaLink team.';
+  if (!hasCrypto()) return NOCRYPTO;
+  const h = await derive(pw, unb64(MASTER.s), MASTER.n);
+  if (h !== MASTER.h){ await wait(700); return 'That main password is not correct.'; }
+  auth.master = true; store.sset('lk_master', '1'); auth.mode = 'login'; return '';
+}
+async function doSignup(name, pw, pw2){
+  name = name.trim().replace(/\s+/g, ' ');
+  if (name.length < 2 || name.length > 30) return 'Enter a name of 2 to 30 characters.';
+  if (pw.length < 6) return 'Use at least 6 characters for your password.';
+  if (pw !== pw2) return 'The two passwords do not match.';
+  if (!canStore) return 'This browser blocks saving, so accounts cannot be created. Try a normal, non-private window.';
+  if (!hasCrypto()) return NOCRYPTO;
+  const users = usersLoad(), k = keyOf(name);
+  if (users[k]) return 'That name is already taken. Pick another, or log in.';
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  users[k] = {name, s:b64(salt), h:await derive(pw, salt, 150000), n:150000};
+  if (!usersSave(users)) return 'Could not save your account in this browser.';
+  startSession(k); return '';
+}
+async function doLogin(name, pw){
+  if (!hasCrypto()) return NOCRYPTO;
+  const u = usersLoad()[keyOf(name)];
+  if (!u){ await wait(700); return 'Name or password is incorrect.'; }
+  if (await derive(pw, unb64(u.s), u.n) !== u.h){ await wait(700); return 'Name or password is incorrect.'; }
+  startSession(keyOf(name)); return '';
+}
+
+function viewMaster(){
+  return `<div><h1>Enter the main password</h1>
+    <p class="muted small" style="margin-top:4px">This prototype is private. Ask the LocaLink team for the main password.</p></div>
+  <form data-form="master" class="stack">
+    <label>Main password<input type="password" id="m-pw" autocomplete="off" required></label>
+    <p class="err" role="alert" hidden></p>
+    <button class="btn" type="submit">Continue</button></form>
+  <p class="note">Are you the owner? <button type="button" class="linkbtn" data-act="opensetup">Create the access code</button></p>`;
+}
+function viewAuth(){
+  const su = auth.mode === 'signup';
+  return `<div><h1>${su ? 'Create your account' : 'Welcome back'}</h1>
+    <p class="muted small" style="margin-top:4px">${su ? 'Choose a name and password. Your bookings will be saved under your name.' : 'Log in with the name and password you chose.'}</p></div>
+  <div class="roles" style="grid-template-columns:repeat(2,1fr)" role="tablist">
+    <button type="button" role="tab" aria-selected="${!su}" data-act="authmode" data-v="login">Log in</button>
+    <button type="button" role="tab" aria-selected="${su}" data-act="authmode" data-v="signup">Sign up</button></div>
+  <form data-form="${su ? 'signup' : 'login'}" class="stack">
+    <label>Your name<input type="text" id="a-name" autocomplete="username" maxlength="30" required></label>
+    <label>Password<input type="password" id="a-pw" autocomplete="${su ? 'new-password' : 'current-password'}" required></label>
+    ${su ? '<label>Confirm password<input type="password" id="a-pw2" autocomplete="new-password" required></label>' : ''}
+    <p class="err" role="alert" hidden></p>
+    <button class="btn" type="submit">${su ? 'Create account' : 'Log in'}</button></form>
+  <p class="note">Prototype only. Do not reuse a password from another site. Your account is saved in this browser.</p>`;
+}
+function viewSetup(){
+  return `<div><h1>Owner setup</h1>
+    <p class="muted small" style="margin-top:4px">Turn your main password into a code. The code is safe to share with Claude. The password itself is not: never send it.</p></div>
+  <form data-form="setup" class="stack">
+    <label>New main password (use 10 or more characters)<input type="password" id="s-pw" autocomplete="off" required></label>
+    <p class="err" role="alert" hidden></p>
+    <button class="btn" type="submit">Create code</button></form>
+  <div id="setup-out" hidden class="stack"><label>Your code<textarea id="s-code" class="code" readonly></textarea></label>
+    <button type="button" class="btn ghost" data-act="copycode">Copy code</button></div>
+  <button type="button" class="back" data-act="exitsetup">← Back to the prototype</button>`;
+}
+async function doSetup(pw){
+  if (!hasCrypto()) return NOCRYPTO;
+  if (pw.length < 8) return 'Use at least 8 characters.';
+  const salt = crypto.getRandomValues(new Uint8Array(16)), n = 150000;
+  const code = JSON.stringify({s:b64(salt), h:await derive(pw, salt, n), n});
+  $('#s-code').value = code; $('#setup-out').hidden = false; return '';
+}
+
+/* ---------- events ---------- */
+const setPath = (path, val) => { const p = path.split('.'); let o = ui; while (p.length > 1) o = o[p.shift()]; o[p[0]] = val; };
+const toggle = (arr, v) => { const i = arr.indexOf(v); i < 0 ? arr.push(v) : arr.splice(i, 1); };
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const a = el.dataset.act, v = el.dataset.v, id = +v;
+  const bk = () => D.bookings.find(b => b.id === id);
+  switch (a){
+    case 'role': ui.role = v; ui.tab = ROLE_TABS[v][0][0]; ui.form = null; break;
+    case 'tab': ui.tab = v; ui.form = null; if (ui.role==='customer' && v==='find') ui.cScreen = 'form'; break;
+    case 'skill': toggle(ui.find.skills, v); break;
+    case 'slot': ui.find.slot = v; break;
+    case 'search': ui.cScreen = 'results'; break;
+    case 'back': ui.cScreen = ui.cScreen === 'confirm' ? 'results' : 'form'; break;
+    case 'pick': ui.pick = id; ui.cScreen = 'confirm'; break;
+    case 'send': {
+      const f = ui.find;
+      D.bookings.push({id:D.nextB++,mine:true,workerId:ui.pick,service:f.service,skills:[...f.skills],area:f.area,slot:f.slot,address:f.details,note:f.note,status:'requested',rating:null,complaint:null});
+      toast('Request sent to ' + wById(ui.pick).name); ui.tab = 'bookings'; ui.cScreen = 'form'; break; }
+    case 'cancel': bk().status = 'cancelled'; toast('Booking cancelled'); break;
+    case 'refind': { const b = bk(); ui.find = {...ui.find, service:b.service, skills:[...b.skills], area:b.area, slot:b.slot}; ui.tab = 'find'; ui.cScreen = 'results'; break; }
+    case 'openform': ui.form = v; ui.rate = 0; break;
+    case 'star': ui.rate = id; break;
+    case 'submitrate': {
+      if (!ui.rate){ toast('Choose 1 to 5 stars first'); return; }
+      const b = bk(), w = wById(b.workerId);
+      w.rating = (w.rating * w.count + ui.rate) / (w.count + 1); w.count += 1; b.rating = ui.rate; ui.form = null;
+      toast('Thanks. Rating saved for ' + w.name); break; }
+    case 'submitrep': {
+      const t = ($('#rep-text').value || '').trim(); if (!t){ toast('Describe the problem first'); return; }
+      bk().complaint = {text:t, status:'open'}; ui.form = null; toast('Sent to the admin team'); break; }
+    case 'accept': { const b = bk(); b.status = 'accepted'; wById(b.workerId).accepted += 1; toast('Accepted. Address is now visible'); break; }
+    case 'decline': bk().status = 'declined'; toast('Request declined'); break;
+    case 'complete': { const b = bk(); b.status = 'completed'; wById(b.workerId).completed += 1; toast('Marked completed. Customer can now rate'); break; }
+    case 'toggleslot': { const w = wById(ui.workerId); toggle(w.slots, v); break; }
+    case 'regskill': toggle(ui.reg.skills, v); break;
+    case 'regslot': toggle(ui.reg.slots, v); break;
+    case 'regflag': ui.reg[v] = !ui.reg[v]; break;
+    case 'register': {
+      const r = ui.reg; if (!r.name.trim()){ toast('Enter your name first'); return; }
+      if (!r.skills.length){ toast('Pick at least one skill'); return; }
+      const docs = []; if (r.id) docs.push('ID proof uploaded'); if (r.cert) docs.push('Skill certificate uploaded'); if (r.coop) docs.push('Cooperative membership letter uploaded');
+      D.workers.push({id:D.nextW++,name:r.name.trim(),service:r.service,skills:[...r.skills],area:r.area,radius:Math.max(1,+r.radius||3),exp:Math.max(0,+r.exp||0),rating:0,count:0,completed:0,accepted:0,coop:r.coop,status:'pending',slots:[...r.slots],docs});
+      ui.reg = {name:'',service:'Electrician',skills:[],area:'Market Road',radius:4,exp:2,coop:false,id:true,cert:false,slots:['td-a','tm-a']};
+      toast('Submitted. Switch to Admin to approve it'); break; }
+    case 'approve': { const w = wById(id); w.status = 'approved'; toast(w.name + ' approved and now visible to customers'); break; }
+    case 'reject': { D.workers = D.workers.filter(w => w.id !== id); toast('Profile rejected'); break; }
+    case 'resolve': bk().complaint.status = 'resolved'; toast('Complaint resolved'); break;
+    case 'authmode': auth.mode = v; break;
+    case 'logout': auth.user = null; auth.mode = 'login'; store.sset('lk_user', null); break;
+    case 'exitsetup': setupMode = false; break;
+    case 'opensetup': setupMode = true; break;
+    case 'copycode': {
+      const ta = $('#s-code'); ta.select();
+      try{ navigator.clipboard.writeText(ta.value).then(() => toast('Code copied'), () => toast('Press and hold the code to copy it')); }
+      catch(err){ toast('Press and hold the code to copy it'); }
+      return; }
+    case 'reset': D = seed(); ui.cScreen = 'form'; ui.form = null; toast('Demo reset'); break;
+  }
+  render();
+});
+
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.w){ ui.weights[t.dataset.w] = +t.value;
+    const total = Object.values(ui.weights).reduce((a,b) => a+b, 0) || 1;
+    for (const k in ui.weights){ const n = $('#wv-' + k); if (n) n.textContent = Math.round(ui.weights[k]/total*100) + '%'; }
+    $('#resultsList').innerHTML = resultCards(matches(ui.find)); return; }
+  if (t.dataset.bind && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) setPath(t.dataset.bind, t.value);
+});
+document.addEventListener('change', e => {
+  const t = e.target; if (!t.dataset.bind || t.tagName !== 'SELECT') return;
+  const path = t.dataset.bind;
+  setPath(path, path === 'workerId' ? +t.value : t.value);
+  if (path === 'find.service') ui.find.skills = [];
+  if (path === 'reg.service') ui.reg.skills = [];
+  render();
+});
+document.addEventListener('toggle', e => {
+  const k = e.target.dataset && e.target.dataset.key; if (!k) return;
+  e.target.open ? ui.open.add(k) : ui.open.delete(k);
+}, true);
+
+document.addEventListener('submit', async e => {
+  const f = e.target.closest('[data-form]'); if (!f) return;
+  e.preventDefault();
+  const kind = f.dataset.form, btn = f.querySelector('button[type=submit]'), err = f.querySelector('.err');
+  const val = id => (f.querySelector('#' + id) || {}).value || '';
+  btn.disabled = true; err.hidden = true;
+  let msg = '';
+  try{
+    if (kind === 'master') msg = await doUnlock(val('m-pw'));
+    else if (kind === 'login') msg = await doLogin(val('a-name'), val('a-pw'));
+    else if (kind === 'signup') msg = await doSignup(val('a-name'), val('a-pw'), val('a-pw2'));
+    else if (kind === 'setup'){ msg = await doSetup(val('s-pw')); btn.disabled = false; if (msg){ err.textContent = msg; err.hidden = false; } return; }
+  }catch(ex){ msg = 'Something went wrong. Please try again.'; }
+  if (msg){ err.textContent = msg; err.hidden = false; btn.disabled = false; return; }
+  render();
+});
+
+if (auth.user && usersLoad()[auth.user]) D = loadData(); else auth.user = null;
+render();
+</script>
+
+</body>
+</html>
